@@ -38,16 +38,13 @@ async function submitNumber(weight, distance, time, food) {
     if (response.ok) {
       showMessage(`Number saved.`, "success");
       form.reset();
-      getInfo()
+      getInfo();
     } else {
       showMessage(`Error: ${result.error}`, "error");
     }
   } catch (error) {
     console.error("Error:", error);
-    showMessage(
-      "Error trying to submit the number.",
-      "error",
-    );
+    showMessage("Error trying to submit the number.", "error");
   } finally {
     submitBtn.disabled = false;
   }
@@ -83,13 +80,13 @@ function displayData(data) {
       newItem.textContent = el;
       statsDiv.innerHTML += `
         <div class="item">
-        <strong>ID:</strong> ${el.id} <br>
-        <strong>Weight:</strong> ${el.weight} <br>
-        <strong>Distance:</strong> ${el.distance} <br>
-        <strong>Time:</strong> ${el.time} <br>
-        <strong>Food:</strong> ${el.food} <br>
-        <strong>Date:</strong> ${el.created_at} <br>
-        <button onclick={deleteNumber(${el.id})}>Delete id: ${el.id}</button>
+        <p>ID:<span>${el.id}</span></p> 
+        <p>Weight:<span>${el.weight}</span></p> 
+        <p>Distance:<span>${el.distance}</span></p> 
+        <p>Time:<span>${el.time}</span></p> 
+        <p>Food:<span>${el.food}</span></p> 
+        <p>Date:<span>${el.created_at}</span></p> 
+        <button onclick={deleteNumber(${el.id})}>Delete</button>
         </div>
       `;
     });
@@ -195,3 +192,6 @@ async function deleteNumber(id) {
   }
 }
 
+document.addEventListener("DOMContentLoaded", function () {
+  getInfo();
+});

@@ -2,4 +2,4 @@
 
 Save your gym sessions.
 
-Work on progress.
+Work in progress.
