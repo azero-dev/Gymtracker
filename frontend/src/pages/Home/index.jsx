@@ -1,39 +1,34 @@
-import preactLogo from '../../assets/preact.svg';
-import './style.css';
+import { h, Fragment, render } from "preact";
+import { useState, useEffect } from "preact/hooks";
+import Form from "../../components/Form.jsx";
+import Stats from "../../components/Stats.jsx";
+import DataList from "../../components/DataList.jsx";
+import Message from "../../components/Message.jsx";
+import Menu from "../../components/Menu.jsx";
+import "./style.css";
 
 export function Home() {
-	return (
-		<div class="home">
-			<a href="https://preactjs.com" target="_blank">
-				<img src={preactLogo} alt="Preact logo" height="160" width="160" />
-			</a>
-			<h1>Get Started building Vite-powered Preact Apps </h1>
-			<section>
-				<Resource
-					title="Learn Preact"
-					description="If you're new to Preact, try the interactive tutorial to learn important concepts"
-					href="https://preactjs.com/tutorial"
-				/>
-				<Resource
-					title="Differences to React"
-					description="If you're coming from React, you may want to check out our docs to see where Preact differs"
-					href="https://preactjs.com/guide/v10/differences-to-react"
-				/>
-				<Resource
-					title="Learn Vite"
-					description="To learn more about Vite and how you can customize it to fit your needs, take a look at their excellent documentation"
-					href="https://vitejs.dev"
-				/>
-			</section>
-		</div>
-	);
+  const [message, setMessage] = useState({ type: "", text: "" });
+  const [loading, setLoading] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  return (
+    <div class="w-full font-sans bg-gray-950 text-white min-h-screen grid grid-cols-1 grid-rows-[40vh_minmax(80px,100px)_auto]">
+      <Stats />
+      <Menu setIsMenuOpen={setIsMenuOpen} />
+      <div class="bg-gray-900 m-[0_20px] p-[20px] rounded-[20px_20px_0_0]">
+        {isMenuOpen ? <Form /> : <DataList />}
+        {/* <Message /> */}
+      </div>
+    </div>
+  );
 }
 
 function Resource(props) {
-	return (
-		<a href={props.href} target="_blank" class="resource">
-			<h2>{props.title}</h2>
-			<p>{props.description}</p>
-		</a>
-	);
+  return (
+    <a href={props.href} target="_blank" class="resource">
+      <h2>{props.title}</h2>
+      <p>{props.description}</p>
+    </a>
+  );
 }
