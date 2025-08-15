@@ -1,4 +1,4 @@
-import { Fragment, h } from "preact";
+import { h } from "preact";
 import { useEffect, useState } from "preact/hooks";
 import DeleteSession from "./DeleteSession.jsx";
 import ModifySession from "./ModifySession.jsx";

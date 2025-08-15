@@ -24,3 +24,5 @@ dist-ssr
 *.sw?
 
 database/numbers.db
+notes.txt
+.env

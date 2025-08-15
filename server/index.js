@@ -1,18 +1,24 @@
-const express = require("express");
-const sqlite3 = require("sqlite3").verbose();
-const path = require("path");
-const fs = require("fs");
+import express from "express";
+import cors from "cors";
+import sqlite3 from "sqlite3";
+import { fileURLToPath } from "url";
+import { dirname, join } from "path";
+import fs from "fs";
+
 const app = express();
 const PORT = process.env.PORT || 4666;
 
+app.use(cors());
 app.use(express.json());
-app.use(express.static("public"));
 
-const dbDir = path.join(__dirname, "database");
+// TODO: move db to separate file
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const dbDir = join(__dirname, "../database/");
 if (!fs.existsSync(dbDir)) {
-  fs.mkdirSync(dbDir);
+  fs.mkdirSync(dbDir, { recursive: true });
 }
-const dbPath = path.join(dbDir, "numbers.db");
+const dbPath = join(dbDir, "numbers.db");
 const db = new sqlite3.Database(dbPath, (err) => {
   if (err) {
     console.error("Error while connecting to the db", err);
@@ -23,6 +29,7 @@ const db = new sqlite3.Database(dbPath, (err) => {
 });
 
 db.serialize(() => {
+  // TODO: dinamic creation of tables according to input
   db.run(
     `CREATE TABLE IF NOT EXISTS numbers (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -36,16 +43,13 @@ db.serialize(() => {
       if (err) {
         console.error("Error creating the table", err.message);
       } else {
-        console.log('Table ready (db)');
+        console.log("Table ready (db)");
       }
     },
   );
 });
 
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
-});
-
+// API response
 app.post("/api/numbers", (req, res) => {
   const { weight, distance, time, food } = req.body;
   if (weight < 0 || isNaN(parseFloat(weight))) {
@@ -63,15 +67,13 @@ app.post("/api/numbers", (req, res) => {
   stmt.run([weight, distance, time, food], function (err) {
     if (err) {
       console.error("Error inserting:", err);
-      return res.status(500).json({
-        error: "Internal server error",
-      });
+      return res.status(500).json({ error: "Internal server error" });
     }
     res.status(201).json({
-      weight: weight,
-      distance: distance,
-      time: time,
-      food: food,
+      weight,
+      distance,
+      time,
+      food,
       message: "Session saved",
     });
   });
@@ -82,14 +84,9 @@ app.get("/api/numbers", (req, res) => {
   db.all("SELECT * FROM numbers ORDER BY created_at DESC", (err, rows) => {
     if (err) {
       console.error("Error al consultar:", err);
-      return res.status(500).json({
-        error: "Internat server error",
-      });
+      return res.status(500).json({ error: "Internal server error" });
     }
-    res.json({
-      numbers: rows,
-      count: rows.length,
-    });
+    res.json({ numbers: rows, count: rows.length });
   });
 });
 
@@ -97,15 +94,11 @@ app.get("/api/numbers/:id", (req, res) => {
   const { id } = req.params;
   db.get("SELECT * FROM numbers WHERE id = ?", [id], (err, row) => {
     if (err) {
-      console.error("Error accesing:", err);
-      return res.status(500).json({
-        error: "Internat server error",
-      });
+      console.error("Error accessing:", err);
+      return res.status(500).json({ error: "Internal server error" });
     }
     if (!row) {
-      return res.status(404).json({
-        error: "Session not found",
-      });
+      return res.status(404).json({ error: "Session not found" });
     }
     res.json(row);
   });
@@ -116,33 +109,35 @@ app.delete("/api/numbers/:id", (req, res) => {
   db.run("DELETE FROM numbers WHERE id = ?", [id], function (err) {
     if (err) {
       console.error("Error deleting:", err);
-      return res.status(500).json({
-        error: "Internal server error",
-      });
+      return res.status(500).json({ error: "Internal server error" });
     }
     if (this.changes === 0) {
-      return res.status(404).json({
-        error: "Session not found",
-      });
+      return res.status(404).json({ error: "Session not found" });
     }
     res.json({
-      message: "Session Successfully deleted",
+      message: "Session successfully deleted",
       deletedId: id,
     });
   });
 });
 
+// static files
+const frontendDistPath = join(__dirname, "../dist");
+if (fs.existsSync(frontendDistPath)) {
+  app.use(express.static(frontendDistPath));
+  app.get("*", (req, res) => {
+    res.sendFile(join(frontendDistPath, "index.html"));
+  });
+}
+
+// error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(500).json({
-    error: "Something went wrong :(",
-  });
+  res.status(500).json({ error: "Something went wrong :(" });
 });
 
 app.use("*", (req, res) => {
-  res.status(404).json({
-    error: "Route not found - 404",
-  });
+  res.status(404).json({ error: "Route not found - 404" });
 });
 
 process.on("SIGINT", () => {
@@ -151,15 +146,13 @@ process.on("SIGINT", () => {
     if (err) {
       console.error("Error closing the db:", err);
     } else {
-      console.log("Database conection closed.");
+      console.log("Database connection closed.");
     }
     process.exit(0);
   });
 });
 
 app.listen(PORT, () => {
-  console.log(`Server started: http://localhost:${PORT}`);
-  console.log(`Database in: ${dbPath}`);
+  console.log(`Server running on http://localhost:${PORT}`);
+  console.log(`Database: ${dbPath}`);
 });
-
-module.exports = app;

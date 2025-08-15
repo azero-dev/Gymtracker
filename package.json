@@ -1,21 +1,29 @@
 {
+  "name": "Gymtrack",
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "dev:client": "vite",
+    "dev:server": "node server/index.js",
     "build": "vite build",
     "preview": "vite preview"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.11",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.1",
+    "express": "^4.21.2",
     "neovim": "^5.3.0",
     "preact": "^10.25.3",
     "preact-iso": "^2.9.2",
+    "sqlite3": "^5.1.7",
     "tailwindcss": "^4.1.11"
   },
   "devDependencies": {
     "@eslint/js": "^9.33.0",
     "@preact/preset-vite": "^2.9.3",
+    "concurrently": "^9.1.2",
     "eslint": "^9.33.0",
     "eslint-config-preact": "^2.0.0",
     "globals": "^16.3.0",
