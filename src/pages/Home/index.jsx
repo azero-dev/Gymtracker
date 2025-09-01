@@ -1,10 +1,11 @@
-import { h, Fragment, render } from "preact";
 import { useState, useEffect } from "preact/hooks";
-import Form from "../../components/Form.jsx";
 import Stats from "../../components/Stats.jsx";
 import DataList from "../../components/DataList.jsx";
-import Message from "../../components/Message.jsx";
 import Menu from "../../components/Menu.jsx";
+import TemplateList from "../../components/templates/display/TemplateList.jsx";
+import TemplateDashboard from "../../components/templates/display/TemplateDashboard.jsx";
+import SessionDashboard from "../../components/sessions/SessionDashboard.jsx";
+import TemplateForm from "../../components/templates/display/TemplateDashboard.jsx";
 import "./style.css";
 
 export function Home() {
@@ -17,8 +18,8 @@ export function Home() {
       <Stats />
       <Menu setIsMenuOpen={setIsMenuOpen} />
       <div class="bg-gray-900 m-[0_20px] p-[20px] rounded-[20px_20px_0_0]">
-        {isMenuOpen ? <Form /> : <DataList />}
-        {/* <Message /> */}
+        {/* TODO: swap components when TemplateCreation done */}
+        {isMenuOpen ? <SessionDashboard /> : <TemplateDashboard />}
       </div>
     </div>
   );

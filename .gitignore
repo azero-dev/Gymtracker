@@ -23,6 +23,6 @@ dist-ssr
 *.sln
 *.sw?
 
-database/numbers.db
-notes.txt
 .env
+/database/*
+/img/
