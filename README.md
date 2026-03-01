@@ -1,6 +1,6 @@
 # Gymtrack
 
-**Gymtrack** is a offline workout tracker. Track your routines and monitor your progress with dynamic charts.
+**Gymtrack** is an offline workout tracker. Track your routines and monitor your progress with dynamic charts.
 
 ## Features
 

@@ -2,7 +2,7 @@
 # Install with: makepkg -si
 
 pkgname=gymtrack-bin
-pkgver=0.1.0
+pkgver=0.1.2
 pkgrel=1
 pkgdesc="Gymtrack: Offline Gym & Workout Tracker"
 arch=('x86_64')
