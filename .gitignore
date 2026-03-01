@@ -23,6 +23,23 @@ dist-ssr
 *.sln
 *.sw?
 
+# Environment
 .env
-/database/*
+.env.local
+
+# Databases (Legacy)
+/database/
+/server/node_modules/
+/server/database/
+
+# Android (Capacitor)
+android/
+!android/.gitignore
+
+# Linux (Tauri)
+/src-tauri/target/
+/src-tauri/bin/
+
+# Image assets
 /img/
+!/img/.gitkeep

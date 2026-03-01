@@ -1,35 +1,24 @@
-import { useState, useEffect } from "preact/hooks";
-import Stats from "../../components/Stats.jsx";
-import DataList from "../../components/DataList.jsx";
-import Menu from "../../components/Menu.jsx";
-import TemplateList from "../../components/templates/display/TemplateList.jsx";
-import TemplateDashboard from "../../components/templates/display/TemplateDashboard.jsx";
-import SessionDashboard from "../../components/sessions/SessionDashboard.jsx";
-import TemplateForm from "../../components/templates/display/TemplateDashboard.jsx";
+import { useState } from "preact/hooks";
+import Stats from "../../shared/ui/Stats.jsx";
+import Menu from "../../shared/ui/Menu.jsx";
+import TemplateDashboard from "../../features/templates/components/TemplateDashboard.jsx";
+import SessionDashboard from "../../features/sessions/components/SessionDashboard.jsx";
 import "./style.css";
 
 export function Home() {
   const [message, setMessage] = useState({ type: "", text: "" });
   const [loading, setLoading] = useState(false);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(true);
 
   return (
-    <div class="w-full font-sans bg-gray-950 text-white min-h-screen grid grid-cols-1 grid-rows-[40vh_minmax(80px,100px)_auto]">
+    <div class="w-full font-sans bg-[#000000] text-[#f9f9f9] min-h-screen flex flex-col">
       <Stats />
-      <Menu setIsMenuOpen={setIsMenuOpen} />
-      <div class="bg-gray-900 m-[0_20px] p-[20px] rounded-[20px_20px_0_0]">
-        {/* TODO: swap components when TemplateCreation done */}
-        {isMenuOpen ? <SessionDashboard /> : <TemplateDashboard />}
+      <Menu isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} />
+      <div class="flex-1 bg-[#17181c] mx-0 md:mx-5 p-3 md:p-5 rounded-t-2xl md:rounded-t-3xl overflow-hidden">
+        <div key={isMenuOpen ? "sessions" : "templates"} class="animate-in fade-in slide-in-from-bottom-4 duration-500">
+          {isMenuOpen ? <SessionDashboard /> : <TemplateDashboard />}
+        </div>
       </div>
     </div>
-  );
-}
-
-function Resource(props) {
-  return (
-    <a href={props.href} target="_blank" class="resource">
-      <h2>{props.title}</h2>
-      <p>{props.description}</p>
-    </a>
   );
 }

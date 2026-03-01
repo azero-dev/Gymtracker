@@ -1,7 +1,3 @@
-import { Template } from "../src/models/Template.js";
-import { Parameter } from "../src/models/Parameter.js";
-import { Value } from "../src/models/Value.js";
-
 export const saveTemplate = async (db, template) => {
   return new Promise((resolve, reject) => {
     if (!template || !template.id || !template.name) {
@@ -136,112 +132,9 @@ export const saveTemplate = async (db, template) => {
           });
         },
       );
-      // OLD VERSION:
-      // db.run("BEGIN TRANSACTION");
-      // try {
-      //   // Insert template
-      //   db.run("INSERT INTO templates (id, name) VALUES (?, ?)", [
-      //     template.id,
-      //     template.name,
-      //   ]);
-      //
-      //   // Insert parameters
-      //   template.parameters.forEach((param) => {
-      //     if (!param) return;
-      //     db.run(
-      //       "INSERT INTO parameters (id, template_id, name, units) VALUES (?, ?, ?, ?)",
-      //       [param.id, template.id, param.name, param.units],
-      //     );
-      //
-      //     // Insert values
-      //     if (Array.isArray(param.values)) {
-      //       param.values.forEach((value) => {
-      //         if (!value) return;
-      //         const valueId = `${param.id}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      //         db.run(
-      //           "INSERT INTO parameter_values (id, parameter_id, value) VALUES (?, ?, ?)",
-      //           [valueId, param.id, value],
-      //         );
-      //       });
-      //     }
-      //
-      //     // Insert highlights
-      //     // if (Array.isArray(param.highlights)) {
-      //     //   param.highlights.forEach((highlight) => {
-      //     //     if (!highlight) return;
-      //     //     db.run(
-      //     //       "INSERT INTO highlights (parameter_id, value_id) VALUES (?, ?)",
-      //     //       [param.id, XXXXXXXXXX?],
-      //     //     );
-      //     //   });
-      //     // }
-      //   });
-      //
-      //   db.run("COMMIT", (err) => {
-      //     if (err) {
-      //       console.error("Commit failed:", err);
-      //       db.run("ROLLBACK");
-      //       reject(err);
-      //     } else {
-      //       console.log("Transaction committed successfully");
-      //       resolve();
-      //     }
-      //   });
-      // } catch (err) {
-      //   console.error("Transaction failed:", err);
-      //   db.run("ROLLBACK");
-      //   reject(err);
-      // }
     });
   });
 };
-
-// export function getTemplate(db, templateId) {
-//   // 1. Recuperar el template
-//   const templateRow = db
-//     .prepare("SELECT * FROM templates WHERE id = ?")
-//     .get(templateId);
-//   if (!templateRow) return null;
-//
-//   const template = new Template();
-//   template.id = templateRow.id;
-//   template.name = templateRow.name;
-//
-//   // 2. Recuperar parámetros
-//   const parameters = db
-//     .prepare("SELECT * FROM parameters WHERE template_id = ?")
-//     .all(templateId);
-//
-//   for (const paramRow of parameters) {
-//     const parameter = new Parameter();
-//     parameter.id = paramRow.id;
-//     parameter.name = paramRow.name;
-//     parameter.units = paramRow.units;
-//
-//     // 3. Recuperar valores del parámetro
-//     const valuesRows = db
-//       .prepare("SELECT * FROM values WHERE parameter_id = ?")
-//       .all(paramRow.id);
-//     for (const valueRow of valuesRows) {
-//       const value = new Values();
-//       value.id = valueRow.id;
-//       value.options = new Set(JSON.parse(valueRow.options_json)); // String → Set
-//       parameter.values.set(value.id, value);
-//     }
-//
-//     // 4. Recuperar highlights (solo IDs de valores destacados)
-//     const highlightRows = db
-//       .prepare("SELECT value_id FROM highlights WHERE parameter_id = ?")
-//       .all(paramRow.id);
-//     for (const row of highlightRows) {
-//       parameter.highlights.add(row.value_id);
-//     }
-//
-//     template.parameters.set(parameter.id, parameter);
-//   }
-//
-//   return template;
-// }
 
 export const getAllTemplates = async (db) => {
   return new Promise((resolve, reject) => {
@@ -262,27 +155,27 @@ export const getAllTemplates = async (db) => {
     `;
     db.all(query, (err, rows) => {
       if (err) {
-        console.error("Error in getAllTemplatesSimple:", err);
+        console.error("Error in getAllTemplates:", err);
         return reject(err);
       }
       const templatesMap = new Map();
       rows.forEach((row) => {
-        // WARNING: cambiar asignacion a metodos de clase
         if (!templatesMap.has(row.template_id)) {
-          const template = new Template();
-          template.id = row.template_id;
-          template.name = row.template_name;
-          templatesMap.set(row.template_id, template);
+          templatesMap.set(row.template_id, {
+            id: row.template_id,
+            name: row.template_name,
+            parameters: new Map(),
+          });
         }
         const template = templatesMap.get(row.template_id);
         if (row.parameter_id) {
-          // WARNING: cambiar asignacion a metodos de clase
           if (!template.parameters.has(row.parameter_id)) {
-            const parameter = new Parameter();
-            parameter.id = row.parameter_id;
-            parameter.name = row.parameter_name;
-            parameter.units = row.parameter_units;
-            template.parameters.set(row.parameter_id, parameter);
+            template.parameters.set(row.parameter_id, {
+              id: row.parameter_id,
+              name: row.parameter_name,
+              units: row.parameter_units,
+              values: new Set(),
+            });
           }
           const parameter = template.parameters.get(row.parameter_id);
           if (row.value_text) {
@@ -290,8 +183,16 @@ export const getAllTemplates = async (db) => {
           }
         }
       });
-      resolve(Array.from(templatesMap.values()));
-      // TODO: set reject
+
+      // Convert internal Maps and Sets to Arrays for JSON serialization
+      const result = Array.from(templatesMap.values()).map(template => ({
+        ...template,
+        parameters: Array.from(template.parameters.values()).map(param => ({
+          ...param,
+          values: Array.from(param.values)
+        }))
+      }));
+      resolve(result);
     });
   });
 };
@@ -370,6 +271,104 @@ export const deleteTemplate = async (db, templateId) => {
           });
         },
       );
+    });
+  });
+};
+export const updateTemplate = async (db, template) => {
+  return new Promise((resolve, reject) => {
+    if (!template || !template.id) {
+      return reject(new Error("Template ID is required for update"));
+    }
+
+    db.serialize(() => {
+      db.run("BEGIN TRANSACTION", (err) => {
+        if (err) return reject(err);
+
+        // 1. Delete all existing parameter values for this template's parameters
+        const deleteQuery = `
+          DELETE FROM parameter_values 
+          WHERE parameter_id IN (
+            SELECT id FROM parameters WHERE template_id = ?
+          )
+        `;
+
+        db.run(deleteQuery, [template.id], (err) => {
+          if (err) {
+            db.run("ROLLBACK");
+            return reject(err);
+          }
+
+          // 2. Insert new parameter values if any
+          if (!template.parameters || !Array.isArray(template.parameters)) {
+            db.run("COMMIT", (err) => {
+              if (err) {
+                db.run("ROLLBACK");
+                return reject(err);
+              }
+              resolve({ id: template.id });
+            });
+            return;
+          }
+
+          let pendingParameters = template.parameters.length;
+          if (pendingParameters === 0) {
+            db.run("COMMIT", (err) => {
+              if (err) {
+                db.run("ROLLBACK");
+                return reject(err);
+              }
+              resolve({ id: template.id });
+            });
+            return;
+          }
+
+          let hasError = false;
+          template.parameters.forEach((param) => {
+            if (!param.values || !Array.isArray(param.values) || param.values.length === 0) {
+              pendingParameters--;
+              if (pendingParameters === 0 && !hasError) {
+                db.run("COMMIT", (err) => {
+                  if (err) {
+                    db.run("ROLLBACK");
+                    return reject(err);
+                  }
+                  resolve({ id: template.id });
+                });
+              }
+              return;
+            }
+
+            let pendingValues = param.values.length;
+            param.values.forEach((value) => {
+              const valueId = `${param.id}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+              db.run(
+                "INSERT INTO parameter_values (id, parameter_id, value) VALUES (?, ?, ?)",
+                [valueId, param.id, value],
+                (err) => {
+                  if (err && !hasError) {
+                    hasError = true;
+                    db.run("ROLLBACK");
+                    return reject(err);
+                  }
+                  pendingValues--;
+                  if (pendingValues === 0) {
+                    pendingParameters--;
+                    if (pendingParameters === 0 && !hasError) {
+                      db.run("COMMIT", (err) => {
+                        if (err) {
+                          db.run("ROLLBACK");
+                          return reject(err);
+                        }
+                        resolve({ id: template.id });
+                      });
+                    }
+                  }
+                }
+              );
+            });
+          });
+        });
+      });
     });
   });
 };

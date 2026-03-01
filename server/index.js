@@ -8,10 +8,17 @@ import {
   saveTemplate,
   getAllTemplates,
   deleteTemplate,
+  updateTemplate,
 } from "./templateDAO.js";
+import {
+  saveSession,
+  getAllSessions,
+  deleteSession,
+  updateSession,
+} from "./sessionDAO.js";
 
 const app = express();
-const PORT = process.env.PORT || 4666;
+const PORT = parseInt(process.env.PORT || "4666", 10);
 
 app.use(cors());
 app.use(express.json());
@@ -30,6 +37,13 @@ const db = new sqlite3.Database(dbPath, (err) => {
     process.exit(1);
   } else {
     console.log("Connected to db");
+    db.run("PRAGMA journal_mode = WAL;", (err) => {
+      if (err) {
+        console.error("Failed to enable WAL mode:", err);
+      } else {
+        console.log("WAL mode enabled");
+      }
+    });
   }
 });
 
@@ -60,9 +74,44 @@ db.serialize(() => {
       parameter_id TEXT NOT NULL,
       value_id TEXT NOT NULL,
       PRIMARY KEY (parameter_id, value_id),
-      FOREIGN KEY (parameter_id) REFERENCES parameters(id)
+      FOREIGN KEY (parameter_id) REFERENCES parameters(id),
       FOREIGN KEY (value_id) REFERENCES parameter_values(id)
     );
+
+    CREATE TABLE IF NOT EXISTS sessions (
+      id TEXT PRIMARY KEY,
+      template_id TEXT,
+      name TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (template_id) REFERENCES templates(id)
+    );
+
+    CREATE TABLE IF NOT EXISTS session_values (
+      id TEXT PRIMARY KEY,
+      session_id TEXT NOT NULL,
+      parameter_id TEXT NOT NULL,
+      value TEXT NOT NULL,
+      FOREIGN KEY (session_id) REFERENCES sessions(id),
+      FOREIGN KEY (parameter_id) REFERENCES parameters(id)
+    );
+
+    -- Migration: add template_id to sessions if not present
+    PRAGMA foreign_keys=OFF;
+    BEGIN TRANSACTION;
+    CREATE TABLE IF NOT EXISTS sessions_new (
+      id TEXT PRIMARY KEY,
+      template_id TEXT,
+      name TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (template_id) REFERENCES templates(id)
+    );
+    -- Check if we need to migrate
+    -- In a real app we'd check table_info, but for this refactor we can do a simple check
+    INSERT OR IGNORE INTO sessions_new (id, name, created_at) SELECT id, name, created_at FROM sessions;
+    DROP TABLE IF EXISTS sessions;
+    ALTER TABLE sessions_new RENAME TO sessions;
+    COMMIT;
+    PRAGMA foreign_keys=ON;
   `);
 });
 
@@ -144,73 +193,78 @@ app.get("/api/templates", async (req, res) => {
   }
 });
 
-// TODO: SESSIONS ENDPOINTS (old versions)
-// app.post("/api/sessions", (req, res) => {
-//   const { id, name } = req.body;
-//   if (!id || !name) {
-//     return res.status(400).json({ error: "ID and name are required" });
-//   }
-//   const stmt = db.prepare("INSERT INTO sessions (id, name) VALUES (?, ?)");
-//   stmt.run(id, name, function (err) {
-//     if (err) {
-//       console.error("Error inserting session:", err);
-//       // Check if already exists
-//       if (err.message.includes("UNIQUE constraint failed")) {
-//         return res
-//           .status(409)
-//           .json({ error: "Session with this ID already exists" });
-//       }
-//       return res.status(500).json({ error: "Internal server error" });
-//     }
-//     res.status(201).json({
-//       id,
-//       name,
-//       message: "Session saved successfully",
-//     });
-//   });
-//   stmt.finalize();
-// });
-//
-// app.get("/api/sessions", (req, res) => {
-//   db.all("SELECT * FROM sessions ORDER BY created_at DESC", (err, rows) => {
-//     if (err) {
-//       console.error("Error al consultar sessions:", err);
-//       return res.status(500).json({ error: "Internal server error" });
-//     }
-//     res.json({ sessions: rows, count: rows.length });
-//   });
-// });
-//
-// app.get("/api/sessions/:id", (req, res) => {
-//   const { id } = req.params;
-//   db.get("SELECT * FROM sessions WHERE id = ?", [id], (err, row) => {
-//     if (err) {
-//       console.error("Error accessing session:", err);
-//       return res.status(500).json({ error: "Internal server error" });
-//     }
-//     if (!row) {
-//       return res.status(404).json({ error: "Session not found" });
-//     }
-//     res.json(row);
-//   });
-// });
-//
-// app.delete("/api/sessions/:id", (req, res) => {
-//   const { id } = req.params;
-//   db.run("DELETE FROM sessions WHERE id = ?", [id], function (err) {
-//     if (err) {
-//       console.error("Error deleting session:", err);
-//       return res.status(500).json({ error: "Internal server error" });
-//     }
-//     if (this.changes === 0) {
-//       return res.status(404).json({ error: "Session not found" });
-//     }
-//     res.json({
-//       message: "Session successfully deleted",
-//       deletedId: id,
-//     });
-//   });
-// });
+// Sessions
+app.put("/api/templates/:id", async (req, res) => {
+  const template = req.body;
+  const { id } = req.params;
+  if (template.id !== id) {
+    return res.status(400).json({ error: "ID mismatch" });
+  }
+  try {
+    const result = await updateTemplate(db, template);
+    res.json({ success: true, data: result });
+  } catch (err) {
+    console.error("Update template error:", err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post("/api/sessions", async (req, res) => {
+  const session = req.body;
+  console.log("POST /api/sessions - request body:", session);
+  if (!session.id || !session.name) {
+    return res.status(400).json({ error: "ID and name are required" });
+  }
+  try {
+    const result = await saveSession(db, session);
+    res.status(201).json({ success: true, data: result });
+  } catch (err) {
+    if (err.message.includes("already exists")) {
+      return res.status(409).json({ success: false, error: err.message });
+    }
+    console.error("Save session error:", err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.get("/api/sessions", async (req, res) => {
+  try {
+    const sessions = await getAllSessions(db);
+    res.json({ sessions, count: sessions.length });
+  } catch (err) {
+    console.error("Get sessions error:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put("/api/sessions/:id", async (req, res) => {
+  const session = req.body;
+  const { id } = req.params;
+  if (session.id !== id) {
+    return res.status(400).json({ error: "ID mismatch" });
+  }
+  try {
+    const result = await updateSession(db, session);
+    res.json({ success: true, data: result });
+  } catch (err) {
+    console.error("Update session error:", err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.delete("/api/sessions/:id", async (req, res) => {
+  const { id } = req.params;
+  try {
+    await deleteSession(db, id);
+    res.json({ success: true, message: `Session ${id} deleted successfully` });
+  } catch (err) {
+    if (err.message.includes("does not exist")) {
+      return res.status(404).json({ success: false, error: err.message });
+    }
+    console.error("Delete session error:", err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
 
 // Static files and error handling
 const frontendDistPath = join(__dirname, "../dist");
@@ -244,7 +298,7 @@ process.on("SIGINT", () => {
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`Server running on http://0.0.0.0:${PORT}`);
   console.log(`Database: ${dbPath}`);
 });
