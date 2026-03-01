@@ -1,19 +1,17 @@
 # Gymtrack
 
-**Gymtrack** is a offline-first workout tracker. Track your routines and monitor your progress with dynamic charts.
+**Gymtrack** is a offline workout tracker. Track your routines and monitor your progress with dynamic charts.
 
 ## Features
 
-- ** Fully Responsive**: Optimized for both mobile and desktop use.
-- ** Offline-First**: Uses IndexedDB (via Dexie.js) to store everything locally on your device. No server required, no internet needed.
-- ** Progress Tracking**: Beautiful charts to visualize your improvements over time.
+- **Fully Responsive**: Optimized for both mobile and desktop use.
+- **Offline-First**: Uses IndexedDB (via Dexie.js) to store everything locally on your device. No server required, no internet needed.
+- **Progress Tracking**: Beautiful charts to visualize your improvements over time.
 - **️ Custom Templates**: Create and manage your own workout routines with custom parameters and units.
-- ** Cross-Platform**:
+- **Cross-Platform**:
   - **Web**: Installable as a PWA.
   - **Android**: Full APK support via Capacitor.
   - **Linux**: Native desktop application via Tauri.
-
----
 
 ## Installation & Setup
 
@@ -32,8 +30,6 @@ Once installed, you can launch the app simply by typing `gymtrack` in your termi
 2. Open the `android` folder in **Android Studio**.
 3. Build and deploy your APK.
 
----
-
 ## Tech Stack
 
 - **Frontend**: Preact + Vite
@@ -43,14 +39,6 @@ Once installed, you can launch the app simply by typing `gymtrack` in your termi
 - **Desktop Wrapper**: Tauri (Rust)
 - **Mobile Wrapper**: Capacitor
 
----
-
-## 📊 Visualization
+## Visualization
 
 Keep track of your PRs and progress with the integrated chart system.
-
----
-
-## 📜 License
-
-MIT License. Feel free to use and contribute!
