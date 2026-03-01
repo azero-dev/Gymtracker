@@ -36,5 +36,5 @@ jobs:
           tagName: ${{ github.ref_name }}
           releaseName: "Gymtrack ${{ github.ref_name }}"
           releaseBody: "See the assets to download the latest installers."
-          releaseDraft: true
+          releaseDraft: false
           prerelease: false

@@ -2,7 +2,7 @@
 # Install with: makepkg -si
 
 pkgname=gymtrack-bin
-pkgver=0.1.2
+pkgver=0.1.3
 pkgrel=1
 pkgdesc="Gymtrack: Offline Gym & Workout Tracker"
 arch=('x86_64')
@@ -16,8 +16,8 @@ source=("${pkgname}-${pkgver}.deb::${url}/releases/download/v${pkgver}/Gymtrack_
 sha256sums=('SKIP')
 
 package() {
-  # Extract the .deb data
-  tar -xOf "${pkgname}-${pkgver}.deb" data.tar.gz | tar -xz -C "${pkgdir}/"
+  # Extract the .deb data using 'ar' (standard for .deb)
+  ar p "${pkgname}-${pkgver}.deb" data.tar.gz | tar -xz -C "${pkgdir}/"
   
   # Ensure the binary is executable
   chmod +x "${pkgdir}/usr/bin/app"
