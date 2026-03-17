@@ -4,11 +4,11 @@
 pkgname=gymtrack-bin
 pkgver=0.1.3
 pkgrel=1
-pkgdesc="Gymtrack: Offline Gym & Workout Tracker"
+pkgdesc="Gymtrack: Workout Tracker"
 arch=('x86_64')
 url="https://github.com/azero-dev/Gymtracker"
 license=('MIT')
-depends=('cairo' 'gtk3' 'gdk-pixbuf2' 'hicolor-icon-theme' 'libsoup3' 'webkit2gtk-4.1')
+depends=('cairo' 'gtk4' 'gdk-pixbuf2' 'hicolor-icon-theme' 'libsoup3' 'webkit2gtk-4.1')
 provides=('gymtrack')
 conflicts=('gymtrack')
 
